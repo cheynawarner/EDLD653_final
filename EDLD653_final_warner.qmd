@@ -7,7 +7,10 @@ embed-resources: true
 ---
 ## load packages
 ```{r}
-
+library(purrr)
+library(dplyr)
+library(httr) 
+library(jsonlite)
 ```
 
 # Final Exam
@@ -27,8 +30,6 @@ You can get a list of the usernames for 500 players from the USA using the R cod
 In the code chunk below, player_list is a character vector of length 500 where each element is a username.
 
 ```{r}
-library(httr) library(jsonlite)
-
 response <- GET('https://api.chess.com/pub/country/US/players')
 
 player_list <- fromJSON(rawToChar(response$content))$players
@@ -37,9 +38,11 @@ player_list <- fromJSON(rawToChar(response$content))$players
 You can get more information for each user from their username. For instance, below is how you can get more information and stats about username “--untouchable--”.
 
 ```{r}
-info <- GET('https://api.chess.com/pub/player/--untouchable--') fromJSON(rawToChar(info$content))
+info <- GET("https://api.chess.com/pub/player/--untouchable--")
+fromJSON(rawToChar(info$content))
 
-stats <- GET('https://api.chess.com/pub/player/--untouchable--/stats') fromJSON(rawToChar(stats$content))
+stats <- GET('https://api.chess.com/pub/player/--untouchable--/stats') 
+fromJSON(rawToChar(stats$content))
 ```
 
 Write R code to create a data frame for the first 500 players. Each row in this data frame must represent a user with the following columns for all users.
@@ -64,6 +67,11 @@ Write R code to create a data frame for the first 500 players. Each row in this 
 
 - rapid_record_draw if available, NA if not available
 
+```{r}
+
+```
+
+
 # (2) Identify & Remove Duplicate Files (20 points)
 
 In this question, you’re tasked with automating a crucial task for your team in a real-world scenario. The team regularly pulls a series of datasets from a server and exports them to distinct daily folders. Each of these folders contains multiple subfolders, each housing several CSV files for analysis. Due to a system glitch, some files have been duplicated and scattered in these subfolders. As your team’s data scientist and R expert, your goal is to write an R script to identify and remove these duplicate files while keeping the original files intact. The entire folder structure houses 222 files, of which 207 are unique. Your script should also generate a table summarizing the files identified and deleted.
@@ -81,6 +89,10 @@ In this question, you’re tasked with automating a crucial task for your team i
   - Generate a two-column table of the 15 duplicate files. The first column should list the file paths of the original files retained, and the second should provide the file paths of the deleted duplicates.
 
 - Upon successful execution, your script should leave a clean folder containing only the 207 unique files. You may need the following R programming skills to complete this task: if-else statements, for loops, and file & folder structures functions.
+
+```{r}
+
+```
 
 # (3) Multiple Models (10 points) 
 
