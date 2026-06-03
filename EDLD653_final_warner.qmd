@@ -14,7 +14,7 @@ library(dplyr)
 library(httr) 
 library(jsonlite)
 library(here)
-library(digest)
+library(digest) # for q2
 ```
 
 # Final Exam
@@ -132,14 +132,27 @@ In this question, you’re tasked with automating a crucial task for your team i
 
 - Upon successful execution, your script should leave a clean folder containing only the 207 unique files. You may need the following R programming skills to complete this task: if-else statements, for loops, and file & folder structures functions.
 
+#load data and make df
 ```{r}
-directory <- here("data", "question_2")
+directory <- here("data", "question_2") # set where data is coming from
 
-all_files <- list.files(directory, pattern = "\\.csv$", full.names = TRUE, recursive = TRUE)
+all_files <- list.files(directory, pattern = "\\.csv$", full.names = TRUE, recursive = TRUE) # list all files
+
+file_info <- data.frame(
+  path = all_files,
+  hash = sapply(all_files, digest, file = TRUE), # apparently digest is used to generate a unique digital fingerprint for data, internet is telling me this is a good way to determine duplicates
+  stringsAsFactors = FALSE
+)
 ```
 
+#identify duplicates
 ```{r}
+file_info$original <- ave(file_info$path,file_info$hash, FUN = function(x) x[1] # keep first occurrence original file 
+)
 
+file_info$duplicate <- file_info$path != file_info$original #note if its duplicated (true or false)
+
+duplicated_data <- subset(file_info, duplicate) #only the duplicated stuff
 ```
 
 # (3) Multiple Models (10 points)
