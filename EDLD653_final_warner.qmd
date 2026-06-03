@@ -11,6 +11,7 @@ library(purrr)
 library(dplyr)
 library(httr) 
 library(jsonlite)
+library(here)
 ```
 
 # Final Exam
@@ -68,9 +69,42 @@ Write R code to create a data frame for the first 500 players. Each row in this 
 - rapid_record_draw if available, NA if not available
 
 ```{r}
+chess_data <- GET("https://api.chess.com/pub/country/US/players") # get data obvi
 
+player_list <- fromJSON(rawToChar(response$content))$players[1:500] # just for the first 500 players bc it will take forever and ever if its everyone
+
+get_player_info <- function(username) { #for each username from player list
+  player_info <- GET(paste0("https://api.chess.com/pub/player/", username)) %>% # import player data
+    pluck("content") %>% 
+    rawToChar() %>% 
+    fromJSON(simplifyVector = TRUE)
+  player_stats <- GET(paste0("https://api.chess.com/pub/player/", username, "/stats")) %>% # import player stats
+    pluck("content") %>% 
+    rawToChar() %>% 
+    fromJSON(simplifyVector = TRUE)
+  rapid_stats <- player_stats$chess_rapid # just use the player data for rapid
+  
+  # make tibble with info
+  tibble(
+    username = username,
+    name = player_info$name %||% NA, # if they dont have a name, paste NA (same for every line)
+    followers = player_info$followers %||% NA, 
+    location = player_info$location %||% NA,
+    last_online = if (!is.null(player_info$last_online)) #if timestamp, then convert. if not, then NA
+      as.POSIXct(player_info$last_online, origin = "1970-01-01") else NA, #chess.com gives u a weird version of timestamp that sucks and is impossible to read so this changes it to be normal format. 
+    rapid_last_rating  = rapid_stats$last$rating  %||% NA, 
+    rapid_best_rating  = rapid_stats$best$rating  %||% NA,
+    rapid_record_win   = rapid_stats$record$win   %||% NA,
+    rapid_record_loss  = rapid_stats$record$loss  %||% NA,
+    rapid_record_draw  = rapid_stats$record$draw  %||% NA
+  )
+}
 ```
 
+# make df of all data (good luck this takes FOREVER to run)
+```{r}
+chess_df <- map_dfr(player_list, get_player_info)
+```
 
 # (2) Identify & Remove Duplicate Files (20 points)
 
@@ -121,9 +155,16 @@ To begin, download the benchmarks.csv file from the course repo and read in the 
 **This is your process**.
 
 1.  First, recode the season column to a new column named wave so that “fall” has a value of 0, “winter” has a value of 1 and “spring” has a value of 2.
+```{r}
+
+```
+
 2.  Then you are going to apply a linear mixed effect model (LME) framework to estimate the reliability of the slope separately by grade (3 through 5), and subject (math and reading).
 
 *Do not use the same code twice. If you find yourself copying/pasting code, create a function, and use that function.*
+```{r}
+
+```
 
 3.  Calculate the reliability of slope as the ratio of true score variance to observed total variance: ***true score variance/ observed score variance***. Here the true score variance estimate is derived from a linear mixed effect model based estimate of the variance in the slope (using the {lme4} package), and the observed score variance estimate is calculated as the variance of the ordinary least squares regression slopes for each student (using the linear model lm() from the {stats} package).
 
