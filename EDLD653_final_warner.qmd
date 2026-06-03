@@ -5,13 +5,16 @@ format: html
 editor: visual
 embed-resources: true 
 ---
+
 ## load packages
+
 ```{r}
 library(purrr)
 library(dplyr)
 library(httr) 
 library(jsonlite)
 library(here)
+library(digest)
 ```
 
 # Final Exam
@@ -68,11 +71,15 @@ Write R code to create a data frame for the first 500 players. Each row in this 
 
 - rapid_record_draw if available, NA if not available
 
+# import data and make list of players
 ```{r}
 chess_data <- GET("https://api.chess.com/pub/country/US/players") # get data obvi
 
 player_list <- fromJSON(rawToChar(response$content))$players[1:500] # just for the first 500 players bc it will take forever and ever if its everyone
+```
 
+# function! 
+```{r}
 get_player_info <- function(username) { #for each username from player list
   player_info <- GET(paste0("https://api.chess.com/pub/player/", username)) %>% # import player data
     pluck("content") %>% 
@@ -102,6 +109,7 @@ get_player_info <- function(username) { #for each username from player list
 ```
 
 # make df of all data (good luck this takes FOREVER to run)
+
 ```{r}
 chess_df <- map_dfr(player_list, get_player_info)
 ```
@@ -125,10 +133,16 @@ In this question, you’re tasked with automating a crucial task for your team i
 - Upon successful execution, your script should leave a clean folder containing only the 207 unique files. You may need the following R programming skills to complete this task: if-else statements, for loops, and file & folder structures functions.
 
 ```{r}
+directory <- here("data", "question_2")
+
+all_files <- list.files(directory, pattern = "\\.csv$", full.names = TRUE, recursive = TRUE)
+```
+
+```{r}
 
 ```
 
-# (3) Multiple Models (10 points) 
+# (3) Multiple Models (10 points)
 
 In this question, you are tasked with estimating and reporting the slope reliability for reading and math measures across three grades. The reliability of the slope is part of a “technical adequacy” report that is required by an external agency for these measures. You will be applying one of many different approaches to this process. Once you complete this, you will have replicated the work of researchers and test developers across the country!
 
@@ -155,6 +169,7 @@ To begin, download the benchmarks.csv file from the course repo and read in the 
 **This is your process**.
 
 1.  First, recode the season column to a new column named wave so that “fall” has a value of 0, “winter” has a value of 1 and “spring” has a value of 2.
+
 ```{r}
 
 ```
@@ -162,6 +177,7 @@ To begin, download the benchmarks.csv file from the course repo and read in the 
 2.  Then you are going to apply a linear mixed effect model (LME) framework to estimate the reliability of the slope separately by grade (3 through 5), and subject (math and reading).
 
 *Do not use the same code twice. If you find yourself copying/pasting code, create a function, and use that function.*
+
 ```{r}
 
 ```
@@ -192,13 +208,21 @@ To get the slope reliability estimate, divide the true score variance by the obs
 
 Report the the slope reliability estimate for each grade and subject in a nice table.
 
-# (4) Slope Reliability Function (10 points) 
+```{r}
+
+```
+
+# (4) Slope Reliability Function (10 points)
 
 Write a function that takes an lmer() growth model object as its only argument and returns the slope reliability estimate that you just calculated. Make your function as general as possible; that is, it could work on other lmer() growth model objects.
 
 Apply your function to the models in the previous question to show that it works, and show the results in a simple table.
 
-# (5) 95% Confidence Interval (CI) (20 points) 
+```{r}
+
+```
+
+# (5) 95% Confidence Interval (CI) (20 points)
 
 Now you are going to get the confidence interval around those slope reliability estimates. To do this, you will write you own bootstrapping function. Bootstrapping here is a random sample **with replacement** from the original data set with the same number of students as the original data set.
 
