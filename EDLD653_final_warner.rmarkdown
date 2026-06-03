@@ -75,7 +75,7 @@ Write R code to create a data frame for the first 500 players. Each row in this 
 ```{r}
 chess_data <- GET("https://api.chess.com/pub/country/US/players") # get data obvi
 
-player_list <- fromJSON(rawToChar(response$content))$players[1:50] # just for the first 50 players bc it will take forever and ever if its everyone (thank you joe for being so understanding)
+player_list <- fromJSON(rawToChar(response$content))$players[1:500] # just for the first 500 players bc it will take forever and ever if its everyone
 ```
 
 # function! 
@@ -159,13 +159,13 @@ duplicate_data_table <- duplicated_data %>% # make df of the og and dup file pat
 
 #delete duplicates 
 ```{r}
-delete <- c()
+deletion <- c()
 for (i in duplicated_data$path) {
   if (file.exists(i)) {
     file.remove(i)
-    deletion_results <- c(delete, paste("Duplicated deleted!", i))
+    deletion_results <- c(deletion, paste("Duplicated deleted!", i))
   } else {
-    deletion_results <- c(delete, paste("No file:(", i))
+    deletion_results <- c(deletion, paste("No file:(", i))
   }
 }
 ```
@@ -273,3 +273,4 @@ Your function will take five arguments:
 You will use your bootstrapping function to create 100 bootstrap samples for each grade and subject (normally, we would use something like 1,000 bootstraps, but that would take too long). Then you will modify the slope reliability function you wrote in (4) above to create a new function that takes four arguments: (1) a data frame (or tibble), (2) a grouping variable (in our case student id), (3) a time variable for the growth model, and (4) the outcome variable for the growth model. This function should return the slope reliability estimate. You will apply this function to each of your 100 bootstrap samples. This will give you 100 slope reliability estimates.
 
 For each grade and subject, report the median slope reliability, and the 95% confidence interval (i.e., the slope reliability associated with the 2.5th percentile and 97.5th percentile). Show these results in a nice table, with 6 columns: grade, subject, n size, 95% CI lower bound, 95% CI upper bound, and median slope reliability estimate.
+
