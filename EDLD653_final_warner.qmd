@@ -15,6 +15,8 @@ library(httr)
 library(jsonlite)
 library(here)
 library(digest) # for q2
+library(rio)
+library(lme4)
 ```
 
 # Final Exam
@@ -163,9 +165,9 @@ delete <- c()
 for (i in duplicated_data$path) {
   if (file.exists(i)) {
     file.remove(i)
-    deletion_results <- c(delete, paste("Duplicated deleted!", i))
+    deletion_results <- c(delete, paste("Duplicated deleted!", i))# give success message 
   } else {
-    deletion_results <- c(delete, paste("No file:(", i))
+    deletion_results <- c(delete, paste("No file:(", i) )# give error message if no file
   }
 }
 ```
@@ -194,23 +196,28 @@ To begin, download the benchmarks.csv file from the course repo and read in the 
 
 - math: student’s mathematics score at the given season
 
-**This is your process**.
-
-1.  First, recode the season column to a new column named wave so that “fall” has a value of 0, “winter” has a value of 1 and “spring” has a value of 2.
-
 ```{r}
-
+q3_data <- import(here("data", "benchmarks.csv")) #import data obvi
 ```
 
-2.  Then you are going to apply a linear mixed effect model (LME) framework to estimate the reliability of the slope separately by grade (3 through 5), and subject (math and reading).
+**This is your process**.
+
+First, recode the season column to a new column named wave so that “fall” has a value of 0, “winter” has a value of 1 and “spring” has a value of 2.
+
+```{r}
+q3_data <- q3_data %>% # recode so seasons are numbers
+  mutate(wave = case_when(
+    season == "fall"   ~ 0,
+    season == "winter" ~ 1,
+    season == "spring" ~ 2
+  ))
+```
+
+Then you are going to apply a linear mixed effect model (LME) framework to estimate the reliability of the slope separately by grade (3 through 5), and subject (math and reading).
 
 *Do not use the same code twice. If you find yourself copying/pasting code, create a function, and use that function.*
 
-```{r}
-
-```
-
-3.  Calculate the reliability of slope as the ratio of true score variance to observed total variance: ***true score variance/ observed score variance***. Here the true score variance estimate is derived from a linear mixed effect model based estimate of the variance in the slope (using the {lme4} package), and the observed score variance estimate is calculated as the variance of the ordinary least squares regression slopes for each student (using the linear model lm() from the {stats} package).
+Calculate the reliability of slope as the ratio of true score variance to observed total variance: ***true score variance/ observed score variance***. Here the true score variance estimate is derived from a linear mixed effect model based estimate of the variance in the slope (using the {lme4} package), and the observed score variance estimate is calculated as the variance of the ordinary least squares regression slopes for each student (using the linear model lm() from the {stats} package).
 
     To accomplish this, you will use a for loop, split and lapply from the {base} package, or map from the {purr} package. Use whichever you prefer and find most elegant.
 
@@ -222,6 +229,16 @@ To get the true score variance, you will fit the following mixed-effect growth m
 
 - You will then need to extract the variance of the slope; that is, the variance of the random effect of wave. This will be your estimated true score variance and serve as the numerator for the slope reliability estimate.
 
+```{r}
+true_score_variance <- function(data, score) {
+  fml <- as.formula(paste0(score, " ~ 1 + wave + (1 + wave | sid)")) #model building
+  mod <- lmer(fml, data = data, REML = FALSE) #fit model
+  vc  <- VarCorr(mod) #var structure of effects
+  slope_sd <- attr(vc[["sid"]], "stddev")[2] # sd of slope 
+  slope_sd^2   # variance of random slope
+}
+```
+
 **Denominator**
 
 To get the observed score variance, you will fit the following linear growth model individually for each student for each subject:
@@ -232,12 +249,41 @@ To get the observed score variance, you will fit the following linear growth mod
 
 - You will then calculate the variance of those slope estimates for each grade and subject. That will be your estimated observed score variance and serve as the denominator for the slope reliability estimate.
 
+```{r}
+observed_score_variance <- function(data, score) {
+  student_list <- split(data, data$sid) #one df per student
+  slopes <- sapply(student_list, function(df) { #fit model
+    coef(lm(as.formula(paste0(score, " ~ wave")), data = df))[2]
+  })
+  var(slopes) #get variance 
+}
+```
+
 To get the slope reliability estimate, divide the true score variance by the observed score variance.
+
+```{r}
+reliability <- function(data, score) {
+  num <- true_score_variance(data, score) 
+  den <- observed_score_variance(data, score)
+  tibble(
+    true_score_variance = true_score_variance(data, score) ,
+    observed_score_variance = observed_score_variance(data, score),
+    reliability = num / den
+  )
+}
+```
 
 Report the the slope reliability estimate for each grade and subject in a nice table.
 
 ```{r}
+courses <- c("reading", "math")
 
+q3_results <- map_dfr(courses, function(subj) {
+  q3_data %>%
+    group_by(grade) %>%
+    group_modify(~ reliability(.x, subj)) %>%
+    mutate(subject = subj)
+})
 ```
 
 # (4) Slope Reliability Function (10 points)
