@@ -18,6 +18,7 @@ library(digest) # for q2
 library(rio)
 library(lme4)
 library(tidyr)
+library(knitr)
 ```
 
 # Final Exam
@@ -285,6 +286,13 @@ q3_results <- map_dfr(courses, function(subj) {
     group_modify(~ reliability(.x, subj)) %>%
     mutate(subject = subj)
 })
+
+q3_table <- q3_results %>% 
+  select(-true_score_variance, -observed_score_variance) %>% 
+  pivot_wider(names_from = subject, values_from = reliability) %>% 
+  kable(caption = "Slope reliability")
+
+q3_table
 ```
 
 # (4) Slope Reliability Function (10 points)
@@ -296,13 +304,19 @@ Write a function that takes an lmer() growth model object as its only argument a
 Apply your function to the models in the previous question to show that it works, and show the results in a simple table.
 
 ```{r}
+#Extract the formula, but remove the random variance components; you want a model for the lm() part.
+
+#Extract the data from the model. You’ll need this for the lm(), but you can also extract the names of the variables (i.e., outcome, time variable, id variable, in this case, student ID).
+
+#Once you have those things above, you will be able to apply the lm() model for each student, like you did before. This will allow you to extract the denominator for the slope reliability estimate.
+
+#Pull the numerator for the slope reliability estimate directly from the var/cov structure of the lmer model.
+
 slope_reliability_function <- function(lmer_model) {
-  model <- model.frame(lmer_model)
+  model <- getData(lmer_model)
   student_list <- split(data, data$sid) #one df per student
   #get true var
   vc  <- VarCorr(mod) #var structure of effects
-  slope_sd <- attr(vc[["sid"]], "stddev")[2] # sd of slope 
-  true_variance <- slope_sd^2   # variance of random slope
   
   #get observed var
   slopes <- sapply(student_list, function(df) { #fit model
@@ -343,3 +357,18 @@ Your function will take five arguments:
 You will use your bootstrapping function to create 100 bootstrap samples for each grade and subject (normally, we would use something like 1,000 bootstraps, but that would take too long). Then you will modify the slope reliability function you wrote in (4) above to create a new function that takes four arguments: (1) a data frame (or tibble), (2) a grouping variable (in our case student id), (3) a time variable for the growth model, and (4) the outcome variable for the growth model. This function should return the slope reliability estimate. You will apply this function to each of your 100 bootstrap samples. This will give you 100 slope reliability estimates.
 
 For each grade and subject, report the median slope reliability, and the 95% confidence interval (i.e., the slope reliability associated with the 2.5th percentile and 97.5th percentile). Show these results in a nice table, with 6 columns: grade, subject, n size, 95% CI lower bound, 95% CI upper bound, and median slope reliability estimate.
+
+```{r}
+slope_reliability_bootstrap <- function(df, student_id, time, outcome, sample_number) {
+  student <- unique(df$student_id)
+  n_student <- length(student)
+  map(1:sample_number, function (i) { #for each sample in the dataset 
+    sample(student, size = n_student, replace = TRUE) %>% 
+      tibble(student = .) %>% 
+      mutate(student2 = row_number()) %>% 
+      
+  })
+}
+
+```
+
