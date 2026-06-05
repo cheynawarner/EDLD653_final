@@ -362,10 +362,9 @@ slope_reliability_bootstrap <- function(df, student_id, time, outcome, sample_nu
   student <- unique(df$student_id)
   n_student <- length(student)
   map(1:sample_number, function (i) { #for each sample in the dataset 
-    sample(student, size = n_student, replace = TRUE) %>% 
-      tibble(student = .) %>% 
-      mutate(student2 = row_number()) %>% 
-      
+    sample(student, size = n_student, replace = TRUE) 
+    boot_df <- df[df[[student_id]] %in% sampled_ids, ] 
+    boot_df
   })
 }
 
