@@ -17,6 +17,7 @@ library(here)
 library(digest) # for q2
 library(rio)
 library(lme4)
+library(tidyr)
 ```
 
 # Final Exam
@@ -288,23 +289,28 @@ q3_results <- map_dfr(courses, function(subj) {
 
 # (4) Slope Reliability Function (10 points)
 
+this is definitely wrong I just cannot figure out what else to do im sorry joe :(
+
 Write a function that takes an lmer() growth model object as its only argument and returns the slope reliability estimate that you just calculated. Make your function as general as possible; that is, it could work on other lmer() growth model objects.
 
 Apply your function to the models in the previous question to show that it works, and show the results in a simple table.
 
 ```{r}
-
 slope_reliability_function <- function(lmer_model) {
-  fml <- as.formula(paste0(score, " ~ 1 + wave + (1 + wave | sid)")) #model building
-  mod <- lmer(fml, data = data, REML = FALSE) #fit model
+  model <- model.frame(lmer_model)
+  student_list <- split(data, data$sid) #one df per student
+  #get true var
   vc  <- VarCorr(mod) #var structure of effects
   slope_sd <- attr(vc[["sid"]], "stddev")[2] # sd of slope 
-  slope_sd^2   # variance of random slope
-  student_list <- split(data, data$sid) #one df per student
+  true_variance <- slope_sd^2   # variance of random slope
+  
+  #get observed var
   slopes <- sapply(student_list, function(df) { #fit model
     coef(lm(as.formula(paste0(score, " ~ wave")), data = df))[2]
   })
-  var(slopes) #get variance 
+  observed_variance <- var(slopes) #get variance 
+
+  #reliability maybe who even knows at this point
   num <- true_score_variance(data, score) 
   den <- observed_score_variance(data, score)
   tibble(
@@ -312,7 +318,6 @@ slope_reliability_function <- function(lmer_model) {
     observed_score_variance = observed_score_variance(data, score),
     reliability = num / den)
 }
-  
 ```
 
 # (5) 95% Confidence Interval (CI) (20 points)
