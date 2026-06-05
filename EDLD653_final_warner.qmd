@@ -268,8 +268,7 @@ reliability <- function(data, score) {
   tibble(
     true_score_variance = true_score_variance(data, score) ,
     observed_score_variance = observed_score_variance(data, score),
-    reliability = num / den
-  )
+    reliability = num / den)
 }
 ```
 
@@ -294,6 +293,25 @@ Apply your function to the models in the previous question to show that it works
 
 ```{r}
 
+slope_reliability_function <- function(lmer_model) {
+  fml <- as.formula(paste0(score, " ~ 1 + wave + (1 + wave | sid)")) #model building
+  mod <- lmer(fml, data = data, REML = FALSE) #fit model
+  vc  <- VarCorr(mod) #var structure of effects
+  slope_sd <- attr(vc[["sid"]], "stddev")[2] # sd of slope 
+  slope_sd^2   # variance of random slope
+  student_list <- split(data, data$sid) #one df per student
+  slopes <- sapply(student_list, function(df) { #fit model
+    coef(lm(as.formula(paste0(score, " ~ wave")), data = df))[2]
+  })
+  var(slopes) #get variance 
+  num <- true_score_variance(data, score) 
+  den <- observed_score_variance(data, score)
+  tibble(
+    true_score_variance = true_score_variance(data, score) ,
+    observed_score_variance = observed_score_variance(data, score),
+    reliability = num / den)
+}
+  
 ```
 
 # (5) 95% Confidence Interval (CI) (20 points)
