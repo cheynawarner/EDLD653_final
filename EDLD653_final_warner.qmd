@@ -290,7 +290,7 @@ q3_results <- map_dfr(courses, function(subj) {
 q3_table <- q3_results %>% 
   select(-true_score_variance, -observed_score_variance) %>% 
   pivot_wider(names_from = subject, values_from = reliability) %>% 
-  kable(caption = "Slope reliability")
+  kable(caption = "Slope reliability for each subject by grade")
 
 q3_table
 ```
@@ -304,19 +304,16 @@ Write a function that takes an lmer() growth model object as its only argument a
 Apply your function to the models in the previous question to show that it works, and show the results in a simple table.
 
 ```{r}
+slope_reliability_function <- function(lmer_model) {
 #Extract the formula, but remove the random variance components; you want a model for the lm() part.
+  model <- getData(lmer_model)
 
-#Extract the data from the model. You’ll need this for the lm(), but you can also extract the names of the variables (i.e., outcome, time variable, id variable, in this case, student ID).
+  #Extract the data from the model. You’ll need this for the lm(), but you can also extract the names of the variables (i.e., outcome, time variable, id variable, in this case, student ID).
+  student_id <- split(data, data$sid) #one df per student
+  time <-
+  outcome <- VarCorr(lmer_model) #var structure of effects
 
 #Once you have those things above, you will be able to apply the lm() model for each student, like you did before. This will allow you to extract the denominator for the slope reliability estimate.
-
-#Pull the numerator for the slope reliability estimate directly from the var/cov structure of the lmer model.
-
-slope_reliability_function <- function(lmer_model) {
-  model <- getData(lmer_model)
-  student_list <- split(data, data$sid) #one df per student
-  #get true var
-  vc  <- VarCorr(mod) #var structure of effects
   
   #get observed var
   slopes <- sapply(student_list, function(df) { #fit model
@@ -332,6 +329,8 @@ slope_reliability_function <- function(lmer_model) {
     observed_score_variance = observed_score_variance(data, score),
     reliability = num / den)
 }
+
+#Pull the numerator for the slope reliability estimate directly from the var/cov structure of the lmer model.
 ```
 
 # (5) 95% Confidence Interval (CI) (20 points)
