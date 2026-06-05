@@ -231,6 +231,7 @@ To get the true score variance, you will fit the following mixed-effect growth m
 
 ```{r}
 true_score_variance <- function(data, score) {
+  student_list <- split(data, data$sid)
   fml <- as.formula(paste0(score, " ~ 1 + wave + (1 + wave | sid)")) #model building
   mod <- lmer(fml, data = data, REML = FALSE) #fit model
   vc  <- VarCorr(mod) #var structure of effects
