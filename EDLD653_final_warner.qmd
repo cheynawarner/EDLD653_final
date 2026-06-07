@@ -357,31 +357,96 @@ You will use your bootstrapping function to create 100 bootstrap samples for eac
 
 ```{r}
 slope_reliability_bootstrap <- function(df, student_id, time, outcome, sample_number) {
-  student <- unique(df$student_id) 
+  student <- unique(df[[student_id]])
   n_student <- length(student)
-  map(1:sample_number, function (i) { #for each sample in the dataset 
+  sample_ids <- sample(student,
+                      size = n_student,
+                      replace = TRUE)
+    map(1:sample_number, function (i) { #for each sample in the dataset 
     sample(student, size = n_student, replace = TRUE) 
-    boot_df <- df[df[[student_id]] %in% n_student, ] 
+    boot_df <- df[df[[student_id]] %in% sample_ids, ] 
     boot_df
   })
 }
 
-bootstraps_samples <- slope_reliability_bootstrap(
+# bootstrap for math 
+math_bootstraps_samples <- slope_reliability_bootstrap(
   df = q3_data,
   student_id = "sid",
   time = "wave",
-  outcome = c("math","reading"),
+  outcome = "math",
+  sample_number = 100
+)
+
+# bootstrap for reading 
+read_bootstraps_samples <- slope_reliability_bootstrap(
+  df = q3_data,
+  student_id = "sid",
+  time = "wave",
+  outcome = "reading",
   sample_number = 100
 )
 ```
 
 Then you will modify the slope reliability function you wrote in (4) above to create a new function that takes four arguments: (1) a data frame (or tibble), (2) a grouping variable (in our case student id), (3) a time variable for the growth model, and (4) the outcome variable for the growth model. This function should return the slope reliability estimate. You will apply this function to each of your 100 bootstrap samples. This will give you 100 slope reliability estimates.
 ```{r}
+modified_slope_reliability <- function(df, student_id, time, outcome) {
+  model <- lmer(
+    formula = as.formula(paste0(outcome, " ~ ", time, " + (", time, " | ", student_id, ")")),
+    data = df
+  )
 
+  vc <- lme4::VarCorr(model)
+  slope_var <- attr(vc[[student_id]], "stddev")[2]^2
+  slope_resid <- sigma(model)^2
+  
+  reliability <- slope_var / (slope_var + slope_resid)
+  
+  reliability
+}
 
+#get slope reliability estimates for math and reading 
+
+math_bootstrap_reliabilities <- map_dbl(
+  math_bootstraps_samples,
+  ~ modified_slope_reliability(.x, 
+                               student_id = "sid", 
+                               time = "wave", 
+                               outcome = "math")
+)
+
+read_bootstrap_reliabilities <- map_dbl(
+  read_bootstraps_samples,
+  ~ modified_slope_reliability(.x, 
+                               student_id = "sid", 
+                               time = "wave", 
+                               outcome = "reading")
+)
 ```
 
 For each grade and subject, report the median slope reliability, and the 95% confidence interval (i.e., the slope reliability associated with the 2.5th percentile and 97.5th percentile). Show these results in a nice table, with 6 columns: grade, subject, n size, 95% CI lower bound, 95% CI upper bound, and median slope reliability estimate.
+
+```{r}
+math_results <- tibble(
+  grade = unique(q3_data$grade),
+  subject = "Math",
+  n_size = n_distinct(q3_data$sid),
+  CI_lower = quantile(math_bootstrap_reliabilities, .025),
+  CI_upper = quantile(math_bootstrap_reliabilities, .975),
+  median_slope_reliability = median(math_bootstrap_reliabilities)
+)
+
+reading_results <- tibble(
+   grade = unique(q3_data$grade),
+  subject = "Reading",
+  n_size = n_distinct(q3_data$sid),
+  CI_lower = quantile(read_bootstrap_reliabilities, .025),
+  CI_upper = quantile(read_bootstrap_reliabilities, .975),
+  median_slope_reliability = median(read_bootstrap_reliabilities)
+)
+
+q5_results <- full_join(math_results, reading_results)
+```
 
 
 
