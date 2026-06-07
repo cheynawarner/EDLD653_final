@@ -2,6 +2,9 @@
 title: "EDLD653_final"
 author: "Cheyna"
 format: html
+execute:
+  warning: false
+  message: false
 editor: visual
 embed-resources: true 
 ---
@@ -304,33 +307,21 @@ Write a function that takes an lmer() growth model object as its only argument a
 Apply your function to the models in the previous question to show that it works, and show the results in a simple table.
 
 ```{r}
-slope_reliability_function <- function(lmer_model) {
-#Extract the formula, but remove the random variance components; you want a model for the lm() part.
-  model <- getData(lmer_model)
-
+slope_reliability <- function(df, student_id, time, outcome) {
+  model <- lmer(
+    #Extract the formula, but remove the random variance components; you want a model for the lm() part.
+    formula = as.formula(paste0(outcome, " ~ ", time, " + (", time, " | ", student_id, ")")),
+    data = df
+  )
   #Extract the data from the model. You’ll need this for the lm(), but you can also extract the names of the variables (i.e., outcome, time variable, id variable, in this case, student ID).
-  student_id <- split(data, data$sid) #one df per student
-  time <-
-  outcome <- VarCorr(lmer_model) #var structure of effects
-
-#Once you have those things above, you will be able to apply the lm() model for each student, like you did before. This will allow you to extract the denominator for the slope reliability estimate.
+  vc <- lme4::VarCorr(model)
+  slope_var <- attr(vc[[student_id]], "stddev")[2]^2
+  slope_resid <- sigma(model)^2
+ #Pull the numerator for the slope reliability estimate directly from the var/cov structure of the lmer model.
+  reliability <- slope_var / (slope_var + slope_resid)
   
-  #get observed var
-  slopes <- sapply(student_list, function(df) { #fit model
-    coef(lm(as.formula(paste0(score, " ~ wave")), data = df))[2]
-  })
-  observed_variance <- var(slopes) #get variance 
-
-  #reliability maybe who even knows at this point
-  num <- true_score_variance(data, score) 
-  den <- observed_score_variance(data, score)
-  tibble(
-    true_score_variance = true_score_variance(data, score) ,
-    observed_score_variance = observed_score_variance(data, score),
-    reliability = num / den)
+  reliability
 }
-
-#Pull the numerator for the slope reliability estimate directly from the var/cov structure of the lmer model.
 ```
 
 # (5) 95% Confidence Interval (CI) (20 points)
@@ -446,6 +437,11 @@ reading_results <- tibble(
 )
 
 q5_results <- full_join(math_results, reading_results)
+
+q5_results <- q5_results %>% 
+  kable(caption = "q5 results")
+
+q5_results
 ```
 
 
